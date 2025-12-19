@@ -124,3 +124,16 @@ content/
 - Cloud-Neutral Radar | Data & AI · Apache Iceberg / Delta Lake
 - Cloud-Neutral Radar | Data & AI · Apache Flink
 - Cloud-Neutral Radar | Data & AI · Milvus / Qdrant
+
+# Cloud-Neutral Writing Skills
+
+This directory defines reusable writing skill templates for
+Cloud-Neutral Radar & Workshop content.
+
+Each `.skill` file is a self-contained instruction set.
+Load exactly one skill per generation.
+
+Skills:
+- radar-news.skill      # short radar / judgement card
+- radar-essay.skill     # long-form engineering analysis
+- radar-workshop.skill  # decision-driven workshop
