@@ -1,0 +1,85 @@
+name: Sync Service Documentation
+
+on:
+  schedule:
+    # Run daily at 00:00 UTC (08:00 Beijing Time)
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allow manual trigger
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/sync-service-docs.sh'
+      - '.github/workflows/sync-docs.yml'
+
+jobs:
+  sync-docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout knowledge repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+      
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Run documentation sync script
+        run: |
+          chmod +x scripts/sync-service-docs.sh
+          ./scripts/sync-service-docs.sh
+      
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if [ -n "$(git status --porcelain docs/)" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected in docs/"
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
+          fi
+      
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git add docs/
+          git commit -m "chore(docs): sync service documentation
+
+          Automated sync from service repositories:
+          - console.svc.plus/docs
+          - accounts.svc.plus/docs
+          - rag-server.svc.plus/docs
+          - postgresql.svc.plus/docs
+          
+          Triggered by: ${{ github.event_name }}
+          Workflow: ${{ github.workflow }}
+          Run: ${{ github.run_number }}"
+          
+          git push
+      
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Documentation Sync Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.check_changes.outputs.has_changes }}" == "true" ]; then
+            echo "✅ Documentation updated successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ No changes detected" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Synced Services" >> $GITHUB_STEP_SUMMARY
+          echo "- console.svc.plus → docs/01-console" >> $GITHUB_STEP_SUMMARY
+          echo "- accounts.svc.plus → docs/02-accounts" >> $GITHUB_STEP_SUMMARY
+          echo "- rag-server.svc.plus → docs/03-rag-server" >> $GITHUB_STEP_SUMMARY
+          echo "- postgresql.svc.plus → docs/04-postgresql" >> $GITHUB_STEP_SUMMARY
